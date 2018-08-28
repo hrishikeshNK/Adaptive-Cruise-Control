@@ -1,36 +1,3 @@
-
-
-
-
-/*
-
-Important Notes:
-The speed of the obstacle is kept at 50kmph, for simplifying the oode,
-it can be changed by editing the MACRO for the same
-
-The following distance is set to be between 100 units and 120 units
-
-The distance unit here is not defined, so it is just in 'units', 
-since the ultrasonic sensor doesn't have a realistic range for 
-Adaptive cruise control
-
-The oscilloscope shows the duty cycle of PWM which is proportional 
-to the vehicle speed.
-The two DC motors rotate on the same PWM signal
-
-The pot connect at A0 is used to mimic the driver's manual control 
-of the car including braking and acceleration.
-
-The pot knob varies the speed of the vehicle in manual mode only 
-and is scaled from 0 to 255 kmph speeds
-
-The first few values on the serial monitor on starting the simulation
-or toggling switches are not correct, please wait for 2-3 iterations for
-them to stabilize
-
-*/
-
-
 #include<avr/io.h>
 #include<avr/interrupt.h>
 #include<util/delay.h>
@@ -144,7 +111,7 @@ int main(){
  while(1){
    Serial.println("");
    if(!Autonomy && engine_switch){
-   	 	default_cruise_speed = read_ADC(); //Read driver's manual control input when not in ACC mode
+   	default_cruise_speed = read_ADC(); //Read driver's manual control input when not in ACC mode
     	default_cruise_speed /= 4; // Scale to 0 - 255 kmph
    }
     
@@ -154,24 +121,23 @@ int main(){
     	_delay_us(10);
     	PORTB &= ~(1 << trig); // Sending a 10us pulse to trigger ultrasound
     
-  		while(!burst_sent); // Wait until ultrasonic burst departs
-   
+  	while(!burst_sent); // Wait until ultrasonic burst departs
       
-  		while(!burst_received); //Wait until ultrasonic burst returns
+  	while(!burst_received); //Wait until ultrasonic burst returns
     
     	burst_received = false;
     	overflows += (TCNT0 * 0.0000000625); // Add the remainder of the time after the last overflow
     	
     	distance_to_obstacle = (overflows* 0.01715)-14278;// - 14342;//14342 is the offset to get the right distance
    
-   		error = distance_to_obstacle - 100; //100 units is the following distance
-   		derivative = (last_error - error)/ 0.8; // it takes 0.8s in simulation for each consecutive reading, therefore delta t = 0.8
+   	error = distance_to_obstacle - 100; //100 units is the following distance
+   	derivative = (last_error - error)/ 0.8; // it takes 0.8s in simulation for each consecutive reading, therefore delta t = 0.8
       	Serial.print("Dist. to obstacle = ");
-  		Serial.println(distance_to_obstacle);
-   		Serial.print("Derivative = ");
+  	Serial.println(distance_to_obstacle);
+   	Serial.print("Derivative = ");
     	Serial.println(derivative);
- 		if(derivative < 0) derivative = 0; //Negative derivative should not affect the output since it could accelerate the car rapidly
-   		overflows = 0;
+ 	if(derivative < 0) derivative = 0; //Negative derivative should not affect the output since it could accelerate the car rapidly
+   	overflows = 0;
     	_delay_ms(50);
    
         if((PIND & (1<<PD5)) == 0x20 && Autonomy) // works only in ACC mode
@@ -189,7 +155,7 @@ int main(){
      	if(distance_to_obstacle <= 120  && distance_to_obstacle >= 100)
          	OCR2B = (default_cruise_speed)- (proportional * 10) - (derivative * kd);
       
-   		else if(distance_to_obstacle > 120 && distance_to_obstacle < 160)
+   	else if(distance_to_obstacle > 120 && distance_to_obstacle < 160)
         	OCR2B = (default_cruise_speed)- (proportional * 5) - (derivative * kd);
     
     	else if(distance_to_obstacle >= 160 && distance_to_obstacle < 200)
@@ -200,14 +166,12 @@ int main(){
     	else
           	OCR2B = 0;    
    	}  
- 	else{  
+   else{  
      OCR2B = default_cruise_speed; //Manual mode; Speed is equal to driver's input(potentiometer)
     }
    
    Serial.print("Speed = ");
-    Serial.println(OCR2B);
-   
-   
+   Serial.println(OCR2B);
    last_error = error;
  }  // while loop ends here
   return 0;
